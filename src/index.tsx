@@ -14,8 +14,6 @@ import {
 import { VFC } from "react";
 import { FaShip } from "react-icons/fa";
 
-import logo from "../assets/logo.png";
-
 // interface AddMethodArgs {
 //   left: number;
 //   right: number;
@@ -38,29 +36,47 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
   // };
 
   return (
-    <PanelSection title="Panel Section">
+    <PanelSection title="Controls">
       <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
             showContextMenu(
-              <Menu label="Menu" cancelText="CAAAANCEL" onCancel={() => {}}>
-                <MenuItem onSelected={() => {}}>Item #1</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #2</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #3</MenuItem>
+              <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 3 });}}>Breathing</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 4 });}}>Wave</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 6 });}}>Smooth</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 8 });}}>Race</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 10 });}}>Stack</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             )
           }
         >
-          Server says yolo
+          RGB Effect
         </ButtonItem>
       </PanelSectionRow>
-
+      
       <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
+        <ButtonItem
+          layout="below"
+          onClick={(e) =>
+            showContextMenu(
+              <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 0 });}}>Red</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 0 });}}>Green</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 0, "b": 255 });}}>Blue</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 0 });}}>Yellow</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 255 });}}>Purple</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 255 });}}>Teal</MenuItem>
+                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 255 });}}>White</MenuItem>
+              </Menu>,
+              e.currentTarget ?? window
+            )
+          }
+        >
+          Static Colour
+        </ButtonItem>
       </PanelSectionRow>
 
       <PanelSectionRow>
@@ -68,10 +84,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
           layout="below"
           onClick={() => {
             Navigation.CloseSideMenus();
-            Navigation.Navigate("/decky-plugin-test");
+            Navigation.Navigate("/decky-jsaux-about");
           }}
         >
-          Router
+          About
         </ButtonItem>
       </PanelSectionRow>
     </PanelSection>
@@ -81,25 +97,29 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 const DeckyPluginRouterTest: VFC = () => {
   return (
     <div style={{ marginTop: "50px", color: "white" }}>
-      Hello World!
-      <DialogButton onClick={() => Navigation.NavigateToLibraryTab()}>
-        Go to Library
+      <h1>Decky JSAUX RGB.</h1>
+      <p>An unofficial lighting effect controller plugin for the JSAUX RGB Dock.</p>
+      <p>(Tested only on the HB1201S)</p>
+      <p>Created by Phil @Gadgetoid Howard</p>
+      <p>Issues, bugs and $$$ - <a onClick={() => Navigation.NavigateToExternalWeb("https://github.com/gadgetoid/decky-jsaux-rgb")}>https://github.com/gadgetoid/decky-jsaux-rgb</a></p>
+      <DialogButton onClick={() => Navigation.NavigateBack()}>
+        Close
       </DialogButton>
     </div>
   );
 };
 
 export default definePlugin((serverApi: ServerAPI) => {
-  serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
+  serverApi.routerHook.addRoute("/decky-jsaux-about", DeckyPluginRouterTest, {
     exact: true,
   });
 
   return {
-    title: <div className={staticClasses.Title}>Example Plugin</div>,
+    title: <div className={staticClasses.Title}>Decky JSAUX RGB</div>,
     content: <Content serverAPI={serverApi} />,
     icon: <FaShip />,
     onDismount() {
-      serverApi.routerHook.removeRoute("/decky-plugin-test");
+      serverApi.routerHook.removeRoute("/decky-jsaux-about");
     },
   };
 });

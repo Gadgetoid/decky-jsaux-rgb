@@ -1,14 +1,13 @@
 # This is the default target, which will be built when 
 # you invoke make
 .PHONY: all
-all: hello
+all: rgbctrl
 
-# This rule tells make how to build hello from hello.cpp
-hello:
+rgbctrl:
 	mkdir -p ./out
-	gcc -o ./out/hello ./src/main.c 
+	gcc -o ./out/rgbctrl ./src/main.c -lusb-1.0
+	cp /usr/lib/libusb-1.0.so ./out/libusb-1.0.so
 
-# This rule tells make to delete hello and hello.o
 .PHONY: clean 
 clean:
-	rm -f hello
+	rm -f rgbctrl
