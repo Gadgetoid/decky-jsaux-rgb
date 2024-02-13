@@ -11,65 +11,83 @@ import {
   showContextMenu,
   staticClasses,
 } from "decky-frontend-lib";
-import { VFC } from "react";
+import { useState, VFC } from "react";
 import { FaShip } from "react-icons/fa";
 
-// interface AddMethodArgs {
-//   left: number;
-//   right: number;
-// }
-
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
-  // const [result, setResult] = useState<number | undefined>();
-
-  // const onClick = async () => {
-  //   const result = await serverAPI.callPluginMethod<AddMethodArgs, number>(
-  //     "add",
-  //     {
-  //       left: 2,
-  //       right: 2,
-  //     }
-  //   );
-  //   if (result.success) {
-  //     setResult(result.result);
-  //   }
-  // };
-
+  interface RGB {r: number, g: number, b: number};
+  interface effectState {
+    effect: number,
+    speed: number,
+    colour: RGB
+  };
+  const [effect_state, setState] = useState<effectState>({
+    effect: 0,
+    speed: 0,
+    colour: {r: 0, g: 0, b: 0}
+  });
+  const fetchState = async () => {
+    const result = await serverAPI.callPluginMethod<{}, effectState>("get_menu_state", {});
+    if (result.success) {
+      setState(result.result);
+    }
+  };
+  const compareRGB = (a: RGB, b: RGB) => {
+    return a.r == b.r && a.g == b.g && a.b == b.b;
+  };
+  fetchState();
   return (
-    <PanelSection title="Controls">
+    <PanelSection title="Effects">
       <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
             showContextMenu(
               <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 3 });}}>Breathing</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 4 });}}>Wave</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 6 });}}>Smooth</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 8 });}}>Race</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 10 });}}>Stack</MenuItem>
+                <MenuItem selected={effect_state.effect == 3} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 3 });}}>Breathing</MenuItem>
+                <MenuItem selected={effect_state.effect == 4} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 4 });}}>Wave</MenuItem>
+                <MenuItem selected={effect_state.effect == 6} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 6 });}}>Smooth</MenuItem>
+                <MenuItem selected={effect_state.effect == 8} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 8 });}}>Race</MenuItem>
+                <MenuItem selected={effect_state.effect == 10} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 10 });}}>Stack</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             )
           }
         >
-          RGB Effect
+          Lighting Effect
         </ButtonItem>
       </PanelSectionRow>
-      
       <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
             showContextMenu(
               <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 0 });}}>Red</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 0 });}}>Green</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 0, "b": 255 });}}>Blue</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 0 });}}>Yellow</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 255 });}}>Purple</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 255 });}}>Teal</MenuItem>
-                <MenuItem onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 255 });}}>White</MenuItem>
+                <MenuItem selected={effect_state.speed == 1} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 1 });}}>Normal</MenuItem>
+                <MenuItem selected={effect_state.speed == 2} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 2 });}}>Medium</MenuItem>
+                <MenuItem selected={effect_state.speed == 3} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 3 });}}>Fast</MenuItem>
+                <MenuItem selected={effect_state.speed == 4} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 4 });}}>Turbo</MenuItem>
+              </Menu>,
+              e.currentTarget ?? window
+            )
+          }
+        >
+          Effect Speed
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={(e) =>
+            showContextMenu(
+              <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 0 });}}>Red</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 0 });}}>Green</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 0, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 0, "b": 255 });}}>Blue</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 0 });}}>Yellow</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 255 });}}>Purple</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 255 });}}>Teal</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 255 });}}>White</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             )
@@ -78,7 +96,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
           Static Colour
         </ButtonItem>
       </PanelSectionRow>
-
       <PanelSectionRow>
         <ButtonItem
           layout="below"
