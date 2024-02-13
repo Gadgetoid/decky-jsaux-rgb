@@ -203,7 +203,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
 const DeckyPluginRouterTest: VFC = () => {
   return (
-    <div style={{ marginTop: "50px", color: "white" }}>
+    <div style={{ marginTop: "50px", marginLeft: "50px", marginRight: "50px", color: "white" }}>
       <h1>Decky JSAUX RGB.</h1>
       <p>An unofficial lighting effect controller plugin for the JSAUX RGB Dock.</p>
       <p>(Tested only on the HB1201S)</p>
