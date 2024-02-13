@@ -3,8 +3,6 @@ import sys
 import asyncio
 import functools
 
-from typing import Any, Dict
-
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code one directory up
 # or add the `decky-loader/plugin` path to `python.analysis.extraPaths` in `.vscode/settings.json`
@@ -96,6 +94,15 @@ class RGBDock:
         self._dev = None
         decky_plugin.logger.info(f"Device disconnected: {self.USB_VID:04x} {self.USB_PID:04x}")
 
+    def is_connected(self):
+        if self._dev is not None:
+            try:
+                self._dev.ctrl_transfer(0x21, 9, 0x200, 0, [])
+                return True
+            except usb.core.USBError:
+                pass
+        return False
+
     def process_udev_events(self):
         for device in iter(functools.partial(self._udev_monitor.poll, 0.01), None):
             vid = device.get("ID_VENDOR_ID")
@@ -159,7 +166,9 @@ class RGBDock:
 
 class Plugin:
     async def get_menu_state(self):
-        return self._rgb_dock.get_state()
+        state = self._rgb_dock.get_state()
+        state["connected"] = self._rgb_dock.is_connected()
+        return state
 
     async def change_effect(self, effect):
         self._rgb_dock.change_effect(effect)
