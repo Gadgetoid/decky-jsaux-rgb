@@ -104,7 +104,7 @@ class RGBDock:
         return False
 
     def process_udev_events(self):
-        for device in iter(functools.partial(self._udev_monitor.poll, 0.01), None):
+        for device in iter(functools.partial(self._udev_monitor.poll, 0), None):
             vid = device.get("ID_VENDOR_ID")
             pid = device.get("ID_MODEL_ID")
             decky_plugin.logger.info(f"UDEV event: {vid} {pid} {device.action}")
