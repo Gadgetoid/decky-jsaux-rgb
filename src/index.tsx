@@ -104,9 +104,19 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     fetchState();
     // Lazy update to catch dock connection status
     // TODO: Could websockets push connection state to the frontend?
+    if (lazy_update_timer) {
+      console.log("Clearing interval...");
+      clearInterval(lazy_update_timer);
+    }
     lazy_update_timer = setInterval(async () => {
       fetchState();
-    }, 1000);
+    }, 2000);
+    return () => {
+      if (lazy_update_timer) {
+        console.log("Clearing interval...");
+        clearInterval(lazy_update_timer);
+      }
+    };
 	}, []);
   return (
     <div>
