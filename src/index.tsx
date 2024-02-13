@@ -228,7 +228,7 @@ export default definePlugin((serverApi: ServerAPI) => {
     onDismount() {
       serverApi.routerHook.removeRoute("/decky-jsaux-about");
       if (lazy_update_timer) {
-        clearTimeout(lazy_update_timer);
+        clearInterval(lazy_update_timer);
       }
     },
   };
