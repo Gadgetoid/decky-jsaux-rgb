@@ -1,13 +1,15 @@
 import os
-from subprocess import Popen
+import sys
+import asyncio
+import functools
+
+from typing import Any, Dict
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code one directory up
 # or add the `decky-loader/plugin` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky_plugin
-import sys
-import asyncio
-import functools
+from settings import SettingsManager
 
 
 class RGBDock:
@@ -22,7 +24,7 @@ class RGBDock:
     EFFECT_RACE = 8
     EFFECT_STACK = 10
 
-    def __init__(self):
+    def __init__(self, effect=EFFECT_STATIC, speed=1, brightness=1.0, colour={"r": 0, "g": 255, "b": 255}, **kwargs):
         global usb, pyudev
         # 0x01 = effect (1 static, 3 breathing, 4 wave, 6 smooth, 8 race, 10 stack)
         # 0x02 = speed (1, 2, 3, or 4)
@@ -43,12 +45,15 @@ class RGBDock:
         self._buf[0x00] = 0x16  # Magic number? Header?
 
         # Store raw RGB values for brightness scaling later
-        self._rgb = [[0, 0, 0] for _ in range(4)]
+        r = colour.get("r", 0)
+        g = colour.get("g", 0)
+        b = colour.get("b", 0)
+        self._rgb = [[r, g, b] for _ in range(4)]
 
-        self._effect = self.EFFECT_STATIC
-        self._speed = 1
-        self._brightness = 1.0
-        self._needs_update = False
+        self._effect = effect
+        self._speed = speed
+        self._brightness = brightness
+        self._needs_update = True
 
         self.connect() # (Try to) connect to the dock
 
@@ -56,16 +61,12 @@ class RGBDock:
         self._udev_monitor = pyudev.Monitor.from_netlink(pyudev.Context())
         self._udev_monitor.filter_by(subsystem="usb")
 
-        self.change_colour(255, 0, 0)
-
     def set_rgb(self, led, r, g, b):
-        offset = led * 3
-        self._rgb[offset:offset + 3] = [int(r), int(g), int(b)]
+        self._rgb[led] = [int(r), int(g), int(b)]
         self._needs_update = True
 
     def get_rgb(self, led):
-        offset = led * 3
-        return self._rgb[offset:offset + 3]
+        return self._rgb[led]
 
     def change_colour(self, r, g, b):
         for i in range(4):
@@ -115,12 +116,14 @@ class RGBDock:
             self._needs_update = True
 
         if not self._needs_update:
-            return
+            return False
 
         self._buf[0x01] = self._effect
         self._buf[0x02] = self._speed
         self._buf[0x03] = 2
-        self._buf[0x04:0x04 + 12] = [int(c * self._brightness) for c in self._rgb]
+        for i in range(4):  # TODO: this can probably be tidier
+            offset = 0x04 + (i * 3)
+            self._buf[offset:offset + 3] = [int(c * self._brightness) for c in self._rgb[i]]
 
         # Find the USB device
         # TODO: This wont be great for high-frequency updates
@@ -131,8 +134,22 @@ class RGBDock:
             try:
                 self._dev.ctrl_transfer(0x21, 9, 0x200, 0, self._buf)
                 self._needs_update = False
+                return True
             except usb.core.USBError:
                 self.disconnect()
+
+        return False
+    
+    def get_state(self):
+        return {
+            'effect': self._effect,
+            'speed': self._speed,
+            'colour': {
+                'r': self._rgb[0][0],
+                'g': self._rgb[0][1],
+                'b': self._rgb[0][2]
+            }
+        }
 
     def __del__(self):
         self.change_colour(0, 0, 0)
@@ -142,15 +159,7 @@ class RGBDock:
 
 class Plugin:
     async def get_menu_state(self):
-        return {
-            'effect': self._rgb_dock._effect,
-            'speed': self._rgb_dock._speed,
-            'colour': {
-                'r': self._rgb_dock._rgb[0][0],
-                'g': self._rgb_dock._rgb[0][1],
-                'b': self._rgb_dock._rgb[0][2]
-            }
-        }
+        return self._rgb_dock.get_state()
 
     async def change_effect(self, effect):
         self._rgb_dock.change_effect(effect)
@@ -166,31 +175,29 @@ class Plugin:
         self._rgb_dock.change_effect(RGBDock.EFFECT_STATIC)
 
     async def _main(self):
-        self._rgb_dock = RGBDock()
+        self._settings = SettingsManager(name="settings", settings_directory=os.environ["DECKY_PLUGIN_SETTINGS_DIR"])
+        self._settings.read()
+
+        # Apply defaults
+        # TODO: Why does this feel backwards!?
+        self._settings.settings = {
+            "effect": RGBDock.EFFECT_STATIC,
+            "speed": 1,
+            "brightness": 1.0,
+            "colour": {"r": 0, "g": 255, "b": 255}
+        } | self._settings.settings
+
+        self._rgb_dock = RGBDock(**self._settings.settings)
 
         while True:
-            self._rgb_dock.update()
+            if self._rgb_dock.update():  # If we have updated
+                # Skip to updating the internal dict so we can commit once
+                self._settings.settings.update(self._rgb_dock.get_state())
+                self._settings.commit()
             await asyncio.sleep(0.1)  # TODO: Make faster if we want to sequence custom effects
 
     async def _unload(self):
         pass
 
-    # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
-        decky_plugin.logger.info("Migrating")
-        # Here's a migration example for logs:
-        # - `~/.config/decky-jsaux-rgbtemplate.log` will be migrated to `decky_plugin.DECKY_PLUGIN_LOG_DIR/template.log`
-        decky_plugin.migrate_logs(os.path.join(decky_plugin.DECKY_USER_HOME,
-                                               ".config", "decky-jsaux-rgb", "template.log"))
-        # Here's a migration example for settings:
-        # - `~/homebrew/settings/template.json` is migrated to `decky_plugin.DECKY_PLUGIN_SETTINGS_DIR/template.json`
-        # - `~/.config/decky-jsaux-rgb/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_SETTINGS_DIR/`
-        decky_plugin.migrate_settings(
-            os.path.join(decky_plugin.DECKY_HOME, "settings", "template.json"),
-            os.path.join(decky_plugin.DECKY_USER_HOME, ".config", "decky-jsaux-rgb"))
-        # Here's a migration example for runtime data:
-        # - `~/homebrew/template/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_RUNTIME_DIR/`
-        # - `~/.local/share/decky-jsaux-rgb/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_RUNTIME_DIR/`
-        decky_plugin.migrate_runtime(
-            os.path.join(decky_plugin.DECKY_HOME, "template"),
-            os.path.join(decky_plugin.DECKY_USER_HOME, ".local", "share", "decky-jsaux-rgb"))
+        pass

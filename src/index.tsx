@@ -11,7 +11,7 @@ import {
   showContextMenu,
   staticClasses,
 } from "decky-frontend-lib";
-import { useState, VFC } from "react";
+import { VFC } from "react";
 import { FaShip } from "react-icons/fa";
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
@@ -21,27 +21,24 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     speed: number,
     colour: RGB
   };
-  const [effect_state, setState] = useState<effectState>({
-    effect: 0,
-    speed: 0,
-    colour: {r: 0, g: 0, b: 0}
-  });
   const fetchState = async () => {
     const result = await serverAPI.callPluginMethod<{}, effectState>("get_menu_state", {});
-    if (result.success) {
-      setState(result.result);
-    }
+    return result.success ? result.result : {
+      effect: 0,
+      speed: 0,
+      colour: {r: 0, g: 0, b: 0}
+    };
   };
   const compareRGB = (a: RGB, b: RGB) => {
     return a.r == b.r && a.g == b.g && a.b == b.b;
   };
-  fetchState();
   return (
     <PanelSection title="Effects">
       <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
+            fetchState().then(effect_state =>
             showContextMenu(
               <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
                 <MenuItem selected={effect_state.effect == 3} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 3 });}}>Breathing</MenuItem>
@@ -51,7 +48,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 <MenuItem selected={effect_state.effect == 10} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 10 });}}>Stack</MenuItem>
               </Menu>,
               e.currentTarget ?? window
-            )
+            ))
           }
         >
           Lighting Effect
@@ -61,6 +58,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         <ButtonItem
           layout="below"
           onClick={(e) =>
+            fetchState().then(effect_state =>
             showContextMenu(
               <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
                 <MenuItem selected={effect_state.speed == 1} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 1 });}}>Normal</MenuItem>
@@ -69,7 +67,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 <MenuItem selected={effect_state.speed == 4} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 4 });}}>Turbo</MenuItem>
               </Menu>,
               e.currentTarget ?? window
-            )
+            ))
           }
         >
           Effect Speed
@@ -79,6 +77,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         <ButtonItem
           layout="below"
           onClick={(e) =>
+            fetchState().then(effect_state =>
             showContextMenu(
               <Menu label="Menu" cancelText="Cancel" onCancel={() => {}}>
                 <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 0 });}}>Red</MenuItem>
@@ -90,7 +89,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 255 });}}>White</MenuItem>
               </Menu>,
               e.currentTarget ?? window
-            )
+            ))
           }
         >
           Static Colour
@@ -100,7 +99,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         <ButtonItem
           layout="below"
           onClick={() => {
-            Navigation.CloseSideMenus();
             Navigation.Navigate("/decky-jsaux-about");
           }}
         >
