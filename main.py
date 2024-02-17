@@ -1,7 +1,6 @@
 import os
 import sys
 import asyncio
-import functools
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code one directory up
@@ -23,7 +22,7 @@ class RGBDock:
     EFFECT_STACK = 10
 
     def __init__(self, effect=EFFECT_STATIC, speed=1, brightness=1.0, colour={"r": 0, "g": 255, "b": 255}, **kwargs):
-        global usb, pyudev
+        global usb
         # 0x01 = effect (1 static, 3 breathing, 4 wave, 6 smooth, 8 race, 10 stack)
         # 0x02 = speed (1, 2, 3, or 4)
         # 0x03 = brightness (1 or 2)
@@ -36,7 +35,6 @@ class RGBDock:
         dep_path = os.path.join(decky_plugin.DECKY_PLUGIN_DIR, "bin")
         sys.path.insert(0, dep_path)
         import usb
-        import pyudev
         sys.path.remove(dep_path)
 
         self._buf = [0 for _ in range(65)]
@@ -48,17 +46,14 @@ class RGBDock:
         b = colour.get("b", 0)
         self._rgb = [[r, g, b] for _ in range(4)]
 
+        self._dev = None
         self._state = True
         self._effect = effect
         self._speed = speed
         self._brightness = brightness
         self._needs_update = True
-
-        self.connect() # (Try to) connect to the dock
-
-         # Start udev monitoring
-        self._udev_monitor = pyudev.Monitor.from_netlink(pyudev.Context())
-        self._udev_monitor.filter_by(subsystem="usb")
+        self._retries = 5
+        self._retry_time = 2.0
 
     def set_rgb(self, led, r, g, b):
         self._rgb[led] = [int(r), int(g), int(b)]
@@ -83,13 +78,25 @@ class RGBDock:
         self._speed = speed
         self._needs_update = True
 
-    def connect(self):
-        self._dev = usb.core.find(idVendor=self.USB_VID, idProduct=self.USB_PID)
-        if self._dev:
-            self._dev.set_configuration()
-            decky_plugin.logger.info(f"Device connected: {self.USB_VID:04x} {self.USB_PID:04x}")
-        else:
-            decky_plugin.logger.info(f"Connection failed: {self.USB_VID:04x} {self.USB_PID:04x}")
+    async def connect(self):
+        if self.is_connected():
+            return
+        for _ in range(self._retries):
+            self._dev = usb.core.find(idVendor=self.USB_VID, idProduct=self.USB_PID)
+
+            if self._dev:
+                try:
+                    self._dev.set_configuration()
+                    decky_plugin.logger.info(f"Device connected: {self.USB_VID:04x} {self.USB_PID:04x}")
+                    self._last_failed_connection = None
+                    return True
+                except usb.core.USBError:
+                    pass
+
+            await asyncio.sleep(self._retry_time)
+
+        self.disconnect()
+        return False
 
     def disconnect(self):
         self._dev = None
@@ -101,21 +108,11 @@ class RGBDock:
                 self._dev.ctrl_transfer(0x21, 9, 0x200, 0, [])
                 return True
             except usb.core.USBError:
-                pass
+                self.disconnect()
         return False
 
-    def process_udev_events(self):
-        for device in iter(functools.partial(self._udev_monitor.poll, 0), None):
-            vid = device.get("ID_VENDOR_ID")
-            pid = device.get("ID_MODEL_ID")
-            decky_plugin.logger.info(f"UDEV event: {vid} {pid} {device.action}")
-            if vid == f"{RGBDock.USB_VID:04x}" and pid == f"{RGBDock.USB_PID:04x}":
-                if device.action == "bind":
-                    self.connect()
-                    self._needs_update = True
-
-    def update(self, force=False):
-        self.process_udev_events()
+    async def update(self, force=False):
+        await self.connect()
 
         # Constantly re-setting things like the "breathing" effect will
         # restart the effect over and over, so we should only do high
@@ -208,7 +205,9 @@ class Plugin:
         self._rgb_dock = RGBDock(**self._settings.settings)
 
         while True:
-            if self._rgb_dock.update():  # If we have updated
+            # Connect (if needed) and attempt to update the dock
+            updated = await self._rgb_dock.update()
+            if updated:  # If we have updated
                 # Skip to updating the internal dict so we can commit once
                 self._settings.settings.update(self._rgb_dock.get_state())
                 self._settings.commit()
