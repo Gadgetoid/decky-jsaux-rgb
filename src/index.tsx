@@ -127,10 +127,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     <div>
     <PanelSection title="Status">
       <PanelSectionRow>
-        <ButtonItem disabled>
+        <ButtonItem disabled
+          layout="below">
           {effect_state.connected ? "Connected" : "Disconnected"}
-          <FaThumbsDown style={{marginLeft: "10px"}} title="Disconnected" visibility={effect_state.connected ? "hidden" : "visible"}></FaThumbsDown>
-          <FaThumbsUp style={{marginLeft: "10px"}} title="Connected" visibility={effect_state.connected ? "visible" : "hidden"}></FaThumbsUp>
+          <FaThumbsDown style={{marginLeft: "10px"}} title="Disconnected" display={effect_state.connected ? "none" : "inline"}></FaThumbsDown>
+          <FaThumbsUp style={{marginLeft: "10px"}} title="Connected" display={effect_state.connected ? "inline" : "none"}></FaThumbsUp>
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
