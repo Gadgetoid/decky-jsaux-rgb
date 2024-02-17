@@ -6,7 +6,6 @@ all: python-deps # rgbctrl
 python-deps:
 	mkdir -p ./out
 	pip install pyusb --target ./out
-	pip install pyudev --target ./out
 
 .PHONY: clean 
 clean:

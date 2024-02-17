@@ -1,6 +1,6 @@
 {
   "name": "decky-jsaux-rgb",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Decky plugin to control the RGB lighting on the JSAUX RGB Dock (HB1201S etc).",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
