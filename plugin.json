@@ -3,7 +3,7 @@
   "author": "Phil Howard",
   "flags": ["_root"],
   "publish": {
-    "tags": ["template", "root"],
+    "tags": ["root"],
     "description": "Control the RGB lighting on the JSAUX RGB Dock (HB1201S etc).",
     "image": "https://github.com/gadgetoid/decky-jsaux-rgb/raw/main/decky-jsaux-rgb-screenshot.png"
   }
