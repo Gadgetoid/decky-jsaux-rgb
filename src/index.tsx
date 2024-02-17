@@ -44,6 +44,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
       connected: false
     });
   };
+  const change_effect = (effect: number) => {
+    serverAPI!.callPluginMethod("change_effect", { "effect": effect });
+  }
+  const change_speed = (speed: number) => {
+    serverAPI!.callPluginMethod("change_speed", { "speed": speed });
+  }
+  const change_colour = (r: number, g: number, b: number) => {
+    serverAPI!.callPluginMethod("change_colour", { "r": r, "g": g, "b": b });
+  }
   const effect_name = (effect: number) => {
     switch (effect) {
       case 1:
@@ -130,8 +139,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         <ButtonItem disabled
           layout="below">
           {effect_state.connected ? "Connected" : "Disconnected"}
-          <FaThumbsDown style={{marginLeft: "10px"}} title="Disconnected" display={effect_state.connected ? "none" : "inline"}></FaThumbsDown>
-          <FaThumbsUp style={{marginLeft: "10px"}} title="Connected" display={effect_state.connected ? "inline" : "none"}></FaThumbsUp>
+          {effect_state.connected 
+          ? <FaThumbsUp style={{marginLeft: "10px"}} title="Connected"></FaThumbsUp>
+          : <FaThumbsDown style={{marginLeft: "10px"}} title="Disconnected"></FaThumbsDown>}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
@@ -153,11 +163,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             fetchState().then(() =>
             showContextMenu(
               <Menu label="Effect Type" cancelText="Cancel" onCancel={() => {}}>
-                <MenuItem selected={effect_state.effect == 3} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 3 });}}>Breathing</MenuItem>
-                <MenuItem selected={effect_state.effect == 4} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 4 });}}>Wave</MenuItem>
-                <MenuItem selected={effect_state.effect == 6} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 6 });}}>Smooth</MenuItem>
-                <MenuItem selected={effect_state.effect == 8} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 8 });}}>Race</MenuItem>
-                <MenuItem selected={effect_state.effect == 10} onSelected={() => {serverAPI!.callPluginMethod("change_effect", { "effect": 10 });}}>Stack</MenuItem>
+                <MenuItem selected={effect_state.effect == 1} onSelected={() => change_effect(1)}>Static</MenuItem>
+                <MenuItem selected={effect_state.effect == 3} onSelected={() => change_effect(3)}>Breathing</MenuItem>
+                <MenuItem selected={effect_state.effect == 4} onSelected={() => change_effect(4)}>Wave</MenuItem>
+                <MenuItem selected={effect_state.effect == 6} onSelected={() => change_effect(6)}>Smooth</MenuItem>
+                <MenuItem selected={effect_state.effect == 8} onSelected={() => change_effect(8)}>Race</MenuItem>
+                <MenuItem selected={effect_state.effect == 10} onSelected={() => change_effect(10)}>Stack</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             ))
@@ -166,17 +177,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
           {effect_name(effect_state.effect)}
         </ButtonItem>
       </PanelSectionRow>
-      <PanelSectionRow>
+      {effect_state.effect != 1 && <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
             fetchState().then(() =>
             showContextMenu(
               <Menu label="Effect Speed" cancelText="Cancel" onCancel={() => {}}>
-                <MenuItem selected={effect_state.speed == 1} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 1 });}}>Normal</MenuItem>
-                <MenuItem selected={effect_state.speed == 2} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 2 });}}>Medium</MenuItem>
-                <MenuItem selected={effect_state.speed == 3} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 3 });}}>Fast</MenuItem>
-                <MenuItem selected={effect_state.speed == 4} onSelected={() => {serverAPI!.callPluginMethod("change_speed", { "speed": 4 });}}>Turbo</MenuItem>
+                <MenuItem selected={effect_state.speed == 1} onSelected={() => change_speed(1)}>Normal</MenuItem>
+                <MenuItem selected={effect_state.speed == 2} onSelected={() => change_speed(2)}>Medium</MenuItem>
+                <MenuItem selected={effect_state.speed == 3} onSelected={() => change_speed(3)}>Fast</MenuItem>
+                <MenuItem selected={effect_state.speed == 4} onSelected={() => change_speed(4)}>Turbo</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             ))
@@ -184,23 +195,21 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         >
           {speed_name(effect_state.speed)}
         </ButtonItem>
-      </PanelSectionRow>
-    </PanelSection>
-    <PanelSection title="Custom Colour">
-      <PanelSectionRow>
+      </PanelSectionRow>}
+      {effect_state.effect == 1 && <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={(e) =>
             fetchState().then(() =>
             showContextMenu(
               <Menu label="Colour" cancelText="Cancel" onCancel={() => {}}>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 0 });}}>Red</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 0 });}}>Green</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 0, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 0, "b": 255 });}}>Blue</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 0})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 0 });}}>Yellow</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 0, "b": 255 });}}>Purple</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 0, "g": 255, "b": 255 });}}>Teal</MenuItem>
-                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 255})} onSelected={() => {serverAPI!.callPluginMethod("change_colour", { "r": 255, "g": 255, "b": 255 });}}>White</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 0})} onSelected={() => change_colour(255, 0, 0)}>Red</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 0})} onSelected={() => change_colour(0, 255, 0)}>Green</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 0, b: 255})} onSelected={() => change_colour(0, 0, 255)}>Blue</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 0})} onSelected={() => change_colour(255, 255, 0)}>Yellow</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 0, b: 255})} onSelected={() => change_colour(255, 0, 255)}>Purple</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 0, g: 255, b: 255})} onSelected={() => change_colour(0, 255, 255)}>Teal</MenuItem>
+                <MenuItem selected={compareRGB(effect_state.colour, {r: 255, g: 255, b: 255})} onSelected={() => change_colour(255, 255, 255)}>White</MenuItem>
               </Menu>,
               e.currentTarget ?? window
             ))
@@ -208,7 +217,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         >
           {colour_name(effect_state.colour)}
         </ButtonItem>
-      </PanelSectionRow>
+      </PanelSectionRow>}
     </PanelSection>
     <PanelSection title="Settings">
       <PanelSectionRow>

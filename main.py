@@ -187,7 +187,6 @@ class Plugin:
 
     async def change_colour(self, r, g, b):
         self._rgb_dock.change_colour(r, g, b)
-        self._rgb_dock.change_effect(RGBDock.EFFECT_STATIC)
 
     async def _main(self):
         self._settings = SettingsManager(name="settings", settings_directory=os.environ["DECKY_PLUGIN_SETTINGS_DIR"])
