@@ -2,6 +2,7 @@ import {
   ButtonItem,
   definePlugin,
   DialogButton,
+  Field,
   Menu,
   MenuItem,
   Navigation,
@@ -10,6 +11,7 @@ import {
   ServerAPI,
   showContextMenu,
   staticClasses,
+  Toggle,
 } from "decky-frontend-lib";
 import { useEffect, useState, VFC } from "react";
 import { FaThumbsDown, FaThumbsUp, FaUsb } from "react-icons/fa";
@@ -19,12 +21,14 @@ let lazy_update_timer: NodeJS.Timeout | undefined;
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
   interface RGB {r: number, g: number, b: number};
   interface effectState {
+    state: boolean,
     effect: number,
     speed: number,
     colour: RGB,
     connected: boolean
   };
   const [effect_state, set_effect_state] = useState<effectState>({
+    state: false,
     effect: 0,
     speed: 0,
     colour: {r: 0, g: 0, b: 0},
@@ -33,6 +37,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
   const fetchState = async () => {
     const result = await serverAPI.callPluginMethod<{}, effectState>("get_menu_state", {});
     set_effect_state(result.success ? result.result : {
+      state: false,
       effect: 0,
       speed: 0,
       colour: {r: 0, g: 0, b: 0},
@@ -127,6 +132,16 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
           <FaThumbsDown style={{marginLeft: "10px"}} title="Disconnected" visibility={effect_state.connected ? "hidden" : "visible"}></FaThumbsDown>
           <FaThumbsUp style={{marginLeft: "10px"}} title="Connected" visibility={effect_state.connected ? "visible" : "hidden"}></FaThumbsUp>
         </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field label="Enable">
+          <Toggle
+            value={effect_state.state}
+            onChange={() => {
+              effect_state.state = !effect_state.state;
+              serverAPI!.callPluginMethod("change_state", { "state": effect_state.state });
+            }}/>
+        </Field>
       </PanelSectionRow>
     </PanelSection>
     <PanelSection title="Lighting Effect">

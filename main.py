@@ -48,6 +48,7 @@ class RGBDock:
         b = colour.get("b", 0)
         self._rgb = [[r, g, b] for _ in range(4)]
 
+        self._state = True
         self._effect = effect
         self._speed = speed
         self._brightness = brightness
@@ -125,12 +126,12 @@ class RGBDock:
         if not self._needs_update:
             return False
 
-        self._buf[0x01] = self._effect
+        self._buf[0x01] = self._effect if self._state else self.EFFECT_STATIC
         self._buf[0x02] = self._speed
         self._buf[0x03] = 2
         for i in range(4):  # TODO: this can probably be tidier
             offset = 0x04 + (i * 3)
-            self._buf[offset:offset + 3] = [int(c * self._brightness) for c in self._rgb[i]]
+            self._buf[offset:offset + 3] = [int(c * self._brightness) for c in self._rgb[i]] if self._state else [0, 0, 0]
 
         # Find the USB device
         # TODO: This wont be great for high-frequency updates
@@ -149,6 +150,7 @@ class RGBDock:
     
     def get_state(self):
         return {
+            'state': self._state,
             'effect': self._effect,
             'speed': self._speed,
             'colour': {
@@ -158,6 +160,10 @@ class RGBDock:
             }
         }
 
+    def change_state(self, state):
+        self._state = state
+        self._needs_update = True
+
     def __del__(self):
         self.change_colour(0, 0, 0)
         self.change_effect(self.EFFECT_STATIC)
@@ -165,6 +171,9 @@ class RGBDock:
 
 
 class Plugin:
+    async def change_state(self, state):
+        self._rgb_dock.change_state(state)
+
     async def get_menu_state(self):
         state = self._rgb_dock.get_state()
         state["connected"] = self._rgb_dock.is_connected()
